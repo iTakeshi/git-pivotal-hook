@@ -1,0 +1,45 @@
+#!/usr/bin/env ruby
+
+msg = File.read(ARGV[0])
+
+msg =~ /\s*\[(.*)\]\s*/
+match = Regexp.last_match(0)
+options = Regexp.last_match(1)
+
+tickets = ""
+verb = ""
+
+if match
+  msg.sub!(match, "\n")
+
+  options = options.strip.split(/\s/)
+  options.each do |o|
+    case o
+    when 'noticket'
+      if options.length == 1
+        File.open(ARGV[0], 'w') { |f| f.puts msg }
+        exit 0
+      else
+        puts 'option \'noticket\' cannot be specified with other options'
+        exit 1
+      end
+    when 'fix', 'complete', 'finish', 'deliver'
+      if verb.empty?
+        verb = o
+      else
+        puts 'you cannot specify multiple verbs!!'
+        exit 1
+      end
+    when /\d+/
+      tickets += "#{tickets.empty? ? '' : ' '}##{o}"
+    else
+      puts "invalid option '#{o}'"
+      exit 1
+    end
+  end
+end
+
+tickets = '#' + File.read('.pivotal_ticket_id').strip.gsub("\n", ' #') if tickets.empty?
+
+msg += "\n[#{verb.empty? ? '' : "#{verb} "}#{tickets}]"
+File.open(ARGV[0], 'w') { |f| f.puts msg }
